@@ -4,16 +4,24 @@
 
 import joblib
 import numpy as np
+import pandas as pd
 
-from scipy.sparse import hstack
-from scipy.sparse import csr_matrix
+from scipy.sparse import (
+    hstack,
+    csr_matrix
+)
 
-from src.preprocessing import preprocess_text
+from src.preprocessing import (
+    preprocess_text
+)
 
 from src.features import (
     count_exclamations,
     capital_ratio,
-    promo_word_count
+    promo_word_count,
+    reviewer_review_counts,
+    product_review_counts,
+    duplicate_review_feature
 )
 
 
@@ -31,65 +39,89 @@ tfidf_vectorizer = joblib.load(
 
 
 # =========================================================
-# PREDICT REVIEW FUNCTION
+# DATASET PREDICTION PIPELINE
 # =========================================================
 
-def predict_review(review_text):
+def predict_dataset(df):
 
     # -----------------------------------------------------
-    # TEXT PREPROCESSING
+    # PREPROCESS TEXT
     # -----------------------------------------------------
 
-    processed_review = preprocess_text(
-        review_text
-    )
-
-    # -----------------------------------------------------
-    # TF-IDF TRANSFORMATION
-    # -----------------------------------------------------
-
-    text_vector = tfidf_vectorizer.transform(
-        [processed_review]
+    df['processed_review'] = (
+        df['reviewText']
+        .apply(preprocess_text)
     )
 
     # -----------------------------------------------------
     # FEATURE ENGINEERING
     # -----------------------------------------------------
 
-    exclamation_feature = count_exclamations(
-        review_text
+    df['exclamation_count'] = (
+        df['reviewText']
+        .apply(count_exclamations)
     )
 
-    capital_feature = capital_ratio(
-        review_text
+    df['capital_ratio'] = (
+        df['reviewText']
+        .apply(capital_ratio)
     )
 
-    promo_feature = promo_word_count(
-        processed_review
+    df['promo_word_count'] = (
+        df['processed_review']
+        .apply(promo_word_count)
     )
 
     # -----------------------------------------------------
-    # NUMERICAL FEATURE MATRIX
+    # DATASET LEVEL FEATURES
     # -----------------------------------------------------
 
-    numerical_features = np.array([
+    df['reviewer_review_count'] = (
+        reviewer_review_counts(df)
+    )
+
+    df['product_review_count'] = (
+        product_review_counts(df)
+    )
+
+    df['is_duplicate_review'] = (
+        duplicate_review_feature(df)
+    )
+
+    # -----------------------------------------------------
+    # TF-IDF TRANSFORMATION
+    # -----------------------------------------------------
+
+    X_text = tfidf_vectorizer.transform(
+        df['processed_review']
+    )
+
+    # -----------------------------------------------------
+    # NUMERICAL FEATURES
+    # -----------------------------------------------------
+
+    numerical_features = df[
         [
-            exclamation_feature,
-            capital_feature,
-            promo_feature
+            'review_length',
+            'exclamation_count',
+            'capital_ratio',
+            'reviewer_review_count',
+            'product_review_count',
+            'is_duplicate_review',
+            'promo_word_count'
         ]
-    ])
+    ]
 
     numerical_features = csr_matrix(
-        numerical_features
+        numerical_features.values
     )
 
     # -----------------------------------------------------
     # COMBINE FEATURES
     # -----------------------------------------------------
 
-    final_features = hstack([
-        text_vector,
+    X_final = hstack([
+        X_text,
         numerical_features
     ])
 
@@ -97,8 +129,14 @@ def predict_review(review_text):
     # MODEL PREDICTION
     # -----------------------------------------------------
 
-    prediction = svm_model.predict(
-        final_features
-    )[0]
+    predictions = svm_model.predict(
+        X_final
+    )
 
-    return prediction
+    # -----------------------------------------------------
+    # ADD PREDICTIONS TO DATAFRAME
+    # -----------------------------------------------------
+
+    df['prediction'] = predictions
+
+    return df
