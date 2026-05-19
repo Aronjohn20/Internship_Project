@@ -1,76 +1,123 @@
-import pandas as pd
-import numpy as np
+# =========================================================
+# IMPORTS
+# =========================================================
+
 import re
 import string
+import pandas as pd
 
-from collections import Counter
-
-# NLP
-import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
-# Machine Learning
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
+
+# =========================================================
+# NLP TOOLS
+# =========================================================
+
+stop_words = set(
+    stopwords.words('english')
+)
+
+lemmatizer = WordNetLemmatizer()
+
+
+# =========================================================
+# TEXT CLEANING
+# =========================================================
+
 def clean_text(text):
 
     # -----------------------------------------------------
-    # Convert to lowercase
+    # HANDLE MISSING VALUES
+    # -----------------------------------------------------
+
+    if pd.isna(text):
+        return ""
+
+    # -----------------------------------------------------
+    # CONVERT TO LOWERCASE
     # -----------------------------------------------------
 
     text = text.lower()
 
     # -----------------------------------------------------
-    # Remove URLs
+    # REMOVE URLS
     # -----------------------------------------------------
 
-    text = re.sub(r'http\S+|www\S+', '', text)
-
-    # -----------------------------------------------------
-    # Remove HTML tags
-    # -----------------------------------------------------
-
-    text = re.sub(r'<.*?>', '', text)
-
-    # -----------------------------------------------------
-    # Remove punctuation
-    # -----------------------------------------------------
-
-    text = text.translate(
-        str.maketrans('', '', string.punctuation)
+    text = re.sub(
+        r'http\S+|www\S+',
+        '',
+        text
     )
 
     # -----------------------------------------------------
-    # Remove numbers
+    # REMOVE HTML TAGS
     # -----------------------------------------------------
 
-    text = re.sub(r'\d+', '', text)
+    text = re.sub(
+        r'<.*?>',
+        '',
+        text
+    )
 
     # -----------------------------------------------------
-    # Remove extra whitespace
+    # REMOVE PUNCTUATION
     # -----------------------------------------------------
 
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = text.translate(
+        str.maketrans(
+            '',
+            '',
+            string.punctuation
+        )
+    )
+
+    # -----------------------------------------------------
+    # REMOVE NUMBERS
+    # -----------------------------------------------------
+
+    text = re.sub(
+        r'\d+',
+        '',
+        text
+    )
+
+    # -----------------------------------------------------
+    # REMOVE EXTRA WHITESPACES
+    # -----------------------------------------------------
+
+    text = re.sub(
+        r'\s+',
+        ' ',
+        text
+    ).strip()
 
     return text
+
+
 # =========================================================
-# 9. TOKENIZATION + STOPWORD REMOVAL + LEMMATIZATION
+# FULL NLP PREPROCESSING PIPELINE
 # =========================================================
 
 def preprocess_text(text):
 
-    # Clean basic text
+    # -----------------------------------------------------
+    # BASIC CLEANING
+    # -----------------------------------------------------
+
     text = clean_text(text)
 
     # -----------------------------------------------------
-    # Tokenization using regex
+    # TOKENIZATION
     # -----------------------------------------------------
 
-    tokens = re.findall(r'\w+', text)
+    tokens = re.findall(
+        r'\w+',
+        text
+    )
 
     # -----------------------------------------------------
-    # Stopword Removal
+    # STOPWORD REMOVAL
     # -----------------------------------------------------
 
     tokens = [
@@ -80,7 +127,7 @@ def preprocess_text(text):
     ]
 
     # -----------------------------------------------------
-    # Lemmatization
+    # LEMMATIZATION
     # -----------------------------------------------------
 
     tokens = [
@@ -89,7 +136,7 @@ def preprocess_text(text):
     ]
 
     # -----------------------------------------------------
-    # Join back to sentence
+    # JOIN TOKENS
     # -----------------------------------------------------
 
     processed_text = " ".join(tokens)
