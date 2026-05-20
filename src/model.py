@@ -16,12 +16,13 @@ from src.preprocessing import (
 )
 
 from src.features import (
+    calculate_reviewer_trust_score,
     count_exclamations,
     capital_ratio,
     promo_word_count,
     reviewer_review_counts,
     product_review_counts,
-    duplicate_review_feature
+    duplicate_review_feature,
 )
 
 
@@ -87,7 +88,11 @@ def predict_dataset(df):
     df['is_duplicate_review'] = (
         duplicate_review_feature(df)
     )
-
+    
+    df['reviewer_trust_score'] = (
+        calculate_reviewer_trust_score(df)
+    )
+    
     # -----------------------------------------------------
     # TF-IDF TRANSFORMATION
     # -----------------------------------------------------
@@ -128,7 +133,7 @@ def predict_dataset(df):
     # -----------------------------------------------------
     # MODEL PREDICTION
     # -----------------------------------------------------
-
+   
     predictions = svm_model.predict(
         X_final
     )
@@ -136,7 +141,62 @@ def predict_dataset(df):
     # -----------------------------------------------------
     # ADD PREDICTIONS TO DATAFRAME
     # -----------------------------------------------------
-
+    
     df['prediction'] = predictions
+
+# -----------------------------------------------------
+# SUSPICIOUS REASONS
+# -----------------------------------------------------
+
+    reasons_list = []
+
+    for _, row in df.iterrows():
+
+        reasons = []
+
+        if row['prediction'] == 0:
+
+            if row['promo_word_count'] >= 2:
+                reasons.append(
+                    "Promotional Language"
+                )
+
+            if row['is_duplicate_review'] == 1:
+                reasons.append(
+                    "Duplicate Review"
+                )
+
+            if row['reviewer_review_count'] > 10:
+                reasons.append(
+                    "High Reviewer Activity"
+                )
+
+            if row['capital_ratio'] > 0.1:
+                reasons.append(
+                    "Excessive Capitalization"
+                )
+
+            if row['reviewer_trust_score'] < 50:
+                reasons.append(
+                    "Low Reviewer Trust"
+                )
+
+            if len(reasons) == 0:
+                reasons.append(
+                    "General Suspicious ML Pattern"
+                )
+
+        else:
+
+            reasons.append(
+                "No Major Suspicious Signals"
+            )
+
+        reasons_list.append(
+            ", ".join(reasons)
+        )
+
+    df['suspicious_reasons'] = reasons_list
+
 
     return df

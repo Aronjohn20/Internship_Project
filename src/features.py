@@ -83,3 +83,52 @@ def duplicate_review_feature(df):
         subset=['processed_review'],
         keep=False
     ).astype(int)
+
+# =========================================================
+# REVIEWER TRUST SCORE
+# =========================================================
+
+def calculate_reviewer_trust_score(df):
+
+    trust_scores = []
+
+    for _, row in df.iterrows():
+
+        score = 100
+
+        # ---------------------------------------------
+        # Promotional wording penalty
+        # ---------------------------------------------
+
+        score -= row['promo_word_count'] * 10
+
+        # ---------------------------------------------
+        # Duplicate review penalty
+        # ---------------------------------------------
+
+        if row['is_duplicate_review'] == 1:
+            score -= 30
+
+        # ---------------------------------------------
+        # Excessive reviewer activity penalty
+        # ---------------------------------------------
+
+        if row['reviewer_review_count'] > 10:
+            score -= 20
+
+        # ---------------------------------------------
+        # Excessive capitalization penalty
+        # ---------------------------------------------
+
+        if row['capital_ratio'] > 0.1:
+            score -= 10
+
+        # ---------------------------------------------
+        # Keep score within range
+        # ---------------------------------------------
+
+        score = max(score, 0)
+
+        trust_scores.append(score)
+
+    return trust_scores
