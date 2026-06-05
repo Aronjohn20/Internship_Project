@@ -440,9 +440,12 @@ if uploaded_file is not None:
 
     # ── Compute metrics ──
     total_reviews      = len(predicted_df)
-    suspicious_count   = (predicted_df['prediction'] == 0).sum()
-    genuine_count      = (predicted_df['prediction'] == 1).sum()
-    suspicious_pct     = (suspicious_count / total_reviews) * 100
+    spam_count = (
+    predicted_df['prediction'] == 1).sum()
+    non_spam_count = (
+    predicted_df['prediction'] == 0
+    ).sum()
+    suspicious_pct     = (spam_count / total_reviews) * 100
 
     # ── Metric cards ──
     # st.markdown('<hr class="section-divider">', unsafe_allow_html=True) same here
@@ -464,20 +467,20 @@ if uploaded_file is not None:
             <div class="metric-icon">📋</div>
         </div>
         <div class="metric-card mc-c">
-            <div class="metric-label">Suspicious</div>
-            <div class="metric-value mv-c">{suspicious_count:,}</div>
+            <div class="metric-label">Spam</div>
+            <div class="metric-value mv-c">{spam_count:,}</div>
             <div class="metric-icon">🚨</div>
             <div class="prog-wrap">
                 <div class="prog-fill" style="width:{suspicious_pct:.1f}%"></div>
             </div>
         </div>
         <div class="metric-card mc-g">
-            <div class="metric-label">Genuine</div>
-            <div class="metric-value mv-g">{genuine_count:,}</div>
+            <div class="metric-label">Non-Spam</div>
+            <div class="metric-value mv-g">{non_spam_count:,}</div>
             <div class="metric-icon">✅</div>
         </div>
         <div class="metric-card mc-a">
-            <div class="metric-label">Suspicious Rate</div>
+            <div class="metric-label">Spam Rate</div>
             <div class="metric-value mv-a">{suspicious_pct:.1f}%</div>
             <div class="metric-icon">📊</div>
         </div>
@@ -489,14 +492,14 @@ if uploaded_file is not None:
     # SUSPICIOUS REVIEW MODERATION TABLE
     # =====================================================
 
-    st.subheader("🚨 Suspicious Review Moderation Table")
+    st.subheader("🚨 Predicted Spam Review Moderation Table")
 
     st.caption(
     "Reviews flagged for potential suspicious behavior requiring inspection."
     )
 
     moderation_df = predicted_df[
-        predicted_df['prediction'] == 0
+        predicted_df['prediction'] == 1
     ].copy()
 
     moderation_df = moderation_df[
@@ -504,6 +507,7 @@ if uploaded_file is not None:
             'reviewerID',
             'asin',
             'reviewText',
+            'prediction_confidence',
             'reviewer_trust_score',
             'suspicious_reasons'
         ]
@@ -513,6 +517,7 @@ if uploaded_file is not None:
         'Reviewer',
         'Product',
         'Review',
+        'ML Confidence',
         'Trust Score',
         'Reasons Flagged'
     ]
@@ -565,7 +570,7 @@ if uploaded_file is not None:
         )
 
         clean_df = product_df[
-            product_df['prediction'] == 1
+            product_df['prediction'] == 0
         ]
 
         if len(clean_df) > 0:
@@ -666,7 +671,10 @@ if uploaded_file is not None:
         fig2.patch.set_facecolor(BG)
         ax2.set_facecolor(BG)
 
-        sizes  = [suspicious_count, genuine_count]
+        sizes = [
+                spam_count,
+                non_spam_count
+        ]
         colors = [CORAL, TEAL]
         wedges, texts, autotexts = ax2.pie(
             sizes,
@@ -682,8 +690,8 @@ if uploaded_file is not None:
             at.set_color(BG)
 
         legend_patches = [
-            mpatches.Patch(color=CORAL, label=f'Suspicious  {suspicious_count:,}'),
-            mpatches.Patch(color=TEAL,  label=f'Genuine  {genuine_count:,}'),
+            mpatches.Patch(color=CORAL, label=f'Spam  {spam_count:,}'),
+            mpatches.Patch(color=TEAL,  label=f'Non-Spam  {non_spam_count:,}'),
         ]
         ax2.legend(handles=legend_patches, loc='lower center',
                    ncol=2, fontsize=8.5, frameon=False,

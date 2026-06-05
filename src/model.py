@@ -92,6 +92,20 @@ def predict_dataset(df):
     df['reviewer_trust_score'] = (
         calculate_reviewer_trust_score(df)
     )
+    def trust_level(score):
+
+        if score >= 80:
+            return "High"
+
+        elif score >= 50:
+            return "Medium"
+
+        return "Low"
+
+    df['trust_level'] = (
+        df['reviewer_trust_score']
+        .apply(trust_level)
+    )
     
     # -----------------------------------------------------
     # TF-IDF TRANSFORMATION
@@ -139,6 +153,25 @@ def predict_dataset(df):
     )
 
     # -----------------------------------------------------
+    # CONFIDENCE SCORE
+    # -----------------------------------------------------
+
+    decision_scores = svm_model.decision_function(
+        X_final
+    )
+
+    df['prediction_confidence'] = (
+        np.abs(decision_scores)
+    )
+
+    # -----------------------------------------------------
+    # ADD PREDICTIONS TO DATAFRAME
+    # -----------------------------------------------------
+
+    df['prediction'] = predictions
+    
+
+    # -----------------------------------------------------
     # ADD PREDICTIONS TO DATAFRAME
     # -----------------------------------------------------
     
@@ -154,7 +187,7 @@ def predict_dataset(df):
 
         reasons = []
 
-        if row['prediction'] == 0:
+        if row['prediction'] == 1:
 
             if row['promo_word_count'] >= 2:
                 reasons.append(
@@ -183,13 +216,13 @@ def predict_dataset(df):
 
             if len(reasons) == 0:
                 reasons.append(
-                    "General Suspicious ML Pattern"
+                   "Spam-like Linguistic Pattern"
                 )
 
         else:
 
             reasons.append(
-                "No Major Suspicious Signals"
+                 "Likely Genuine Review"
             )
 
         reasons_list.append(
