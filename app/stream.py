@@ -371,7 +371,7 @@ with st.sidebar:
 # =========================================================
 
 st.markdown("""
-<div class="hero-heading">Review <span>Analytics</span><br>& Fraud Detection</div>
+<div class="hero-heading"><span>Review Analytics & Spam Detection</span></div>
 <div class="hero-sub">
     Upload your product review dataset and let the pipeline identify suspicious,
     promotional, and duplicate reviews — instantly.
